@@ -1,20 +1,70 @@
-\# YOLOv8/v10 CPU Benchmark with OpenVINO
+\# Baseline: YOLOv8n + OpenVINO для детекции человека на видео
 
 
 
-Скрипты для сравнения производительности YOLOv8 и YOLOv10 на CPU, оценки влияния освещения и метрики TTL (время потери цели).
+Этот baseline оценивает качество и производительность детекции человека на трёх видео‑пресетах с разным освещением с помощью модели \*\*YOLOv8n\*\*, конвертированной в формат \*\*OpenVINO\*\* и запущенной на \*\*CPU\*\*.
 
 
 
-\## Структура проекта
+\## Датасет и сценарии
 
 
 
-├── videos/ # три видео: контровой, слабый свет, яркий свет
+Используются три видео из камеры наблюдения/смартфона:
 
-├── yolo\_openvino\_benchmark.ipynb # основной ноутбук
 
-├── requirements.txt # зависимости
 
-└── README.md # этот файл
+\- `videos/backlight.mp4` — контровой свет (подсветка сзади, сложные условия для детекции силуэта).
+
+\- `videos/fulllight.mp4` — равномерный комнатный свет без естественного освещения.
+
+\- `videos/lowlight.mp4` — пониженная освещённость (сложный режим для детектора и трекинга).
+
+
+
+Для каждого видео считаются:
+
+
+
+\- производительность инференса (FPS по кадру);
+
+\- факт присутствия человека в кадре (есть/нет);
+
+\- статистика потерь цели (TTL) — длины серий подряд идущих кадров, где человек не обнаружен.
+
+
+
+\## Модель и инференс
+
+
+
+1\. Загрузка предобученной модели `YOLOv8n` из `ultralytics` и экспорт в OpenVINO:
+
+
+
+```python
+
+from ultralytics import YOLO
+
+import openvino as ov
+
+
+
+model = YOLO('yolov8n.pt')
+
+model.export(format='openvino', imgsz=640)
+
+
+
+core = ov.Core()
+
+model\_path = 'yolov8n\_openvino\_model/yolov8n.xml'
+
+compiled\_model = core.compile\_model(model\_path, 'CPU')
+
+input\_layer = compiled\_model.input(0)
+
+output\_layer = compiled\_model.output(0)
+
+
 
